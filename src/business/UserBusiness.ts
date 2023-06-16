@@ -1,4 +1,6 @@
 import { UserDatabase } from "../database/UserDatabase"
+import { DeleteUserInputDTO, DeleteUserOutputDTO } from "../dtos/user/deleteUser.dto"
+import { GetUserByIdInputDTO } from "../dtos/user/getUserById.dto"
 import { GetUsersInputDTO, GetUsersOutputDTO } from "../dtos/user/getUsers.dto"
 import { LoginInputDTO, LoginOutputDTO } from "../dtos/user/login.dto"
 import { SignupInputDTO, SignupOutputDTO } from "../dtos/user/signup.dto"
@@ -25,8 +27,8 @@ export class UserBusiness {
     const payload = this.tokenManager.getPayload(token)
 
     if (payload === null) {
-        throw new BadRequestError("token inválido")
-    } 
+      throw new BadRequestError("token inválido")
+    }
 
     if (payload.role !== USER_ROLES.ADMIN) {
       throw new BadRequestError("somente admins podem acessar")
@@ -52,6 +54,37 @@ export class UserBusiness {
     return output
   }
 
+  public getUserById = async (input: GetUserByIdInputDTO) => {
+    const { id, token } = input
+
+    const payload = this.tokenManager.getPayload(token)
+
+    if (payload === null) {
+      throw new BadRequestError("token inválido")
+    }
+
+    if (payload.role !== USER_ROLES.ADMIN) {
+      throw new BadRequestError("somente admins podem acessar")
+    }
+
+    const userDB = await this.userDatabase.findUserById(id)
+
+    if (!userDB) {
+      throw new BadRequestError("Usuário não existe.")
+    }
+
+    const user = new User(
+      userDB.id,
+      userDB.name,
+      userDB.email,
+      userDB.password,
+      userDB.role,
+      userDB.created_at
+    )
+
+    return user.toBusinessModel()
+  }
+
   public signup = async (
     input: SignupInputDTO
   ): Promise<SignupOutputDTO> => {
@@ -65,7 +98,7 @@ export class UserBusiness {
       name,
       email,
       hashedPassword,
-      USER_ROLES.NORMAL,
+      USER_ROLES.ADMIN,
       new Date().toISOString()
     )
 
@@ -131,4 +164,27 @@ export class UserBusiness {
 
     return output
   }
+
+  public deleteUser = async (input: DeleteUserInputDTO): Promise<DeleteUserOutputDTO> => {
+    const { id, token } = input
+
+    const payload = await this.tokenManager.getPayload(token)
+
+    if (payload === null) {
+      throw new BadRequestError("Token inválido.")
+    }
+    if (payload.role === USER_ROLES.NORMAL) {
+      throw new BadRequestError("Usuário não tem permissão para deletar dados.")
+    }
+
+    const result = await this.userDatabase.deleteUser(id)
+
+    const output = {
+      message: "Usuário deletado."
+    }
+
+    return output
+  }
+
+
 }
