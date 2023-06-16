@@ -53,4 +53,9 @@ export class UserDatabaseMock extends BaseDatabase {
   ): Promise<void> {
 
   }
+
+  public async deleteUser(id: string):Promise<void> {
+
+   
+  }
 }

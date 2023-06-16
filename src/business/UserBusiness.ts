@@ -177,7 +177,7 @@ export class UserBusiness {
       throw new BadRequestError("Usuário não tem permissão para deletar dados.")
     }
 
-    const result = await this.userDatabase.deleteUser(id)
+    await this.userDatabase.deleteUser(id)
 
     const output = {
       message: "Usuário deletado."
